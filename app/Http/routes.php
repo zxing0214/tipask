@@ -103,7 +103,7 @@ Route::Group(['namespace'=>'Account'],function(){
 
 
     Route::Group(['middleware'=>'auth'],function(){
-
+        Route::get('sign',['as'=>'auth.user.sign','uses'=>'UserController@sign']);
         Route::get('email/sendToken',['as'=>'auth.email.sendToken','uses'=>'EmailController@sendToken']);
 
         Route::get('oauth/{type}/unbind',['as'=>'auth.oauth.unbind','uses'=>'OauthController@unbind']);
@@ -280,6 +280,8 @@ Route::Group(['prefix'=>'admin','namespace'=>'Admin','middleware' =>['auth','aut
     Route::get('system/index',['as'=>'admin.system.index','uses'=>'SystemController@index']);
     Route::post('system/upgrade',['as'=>'admin.system.upgrade','uses'=>'SystemController@upgrade']);
     Route::post('system/adjust',['as'=>'admin.system.adjust','uses'=>'SystemController@adjust']);
+    /*同步动态*/
+    Route::post('system/synchronousdoing',['as'=>'admin.system.synchronousdoing','uses'=>'SystemController@synchronousDoing']);
 
     /*首页*/
     Route::resource('index', 'IndexController', ['only' => ['index']]);
@@ -321,9 +323,15 @@ Route::Group(['prefix'=>'admin','namespace'=>'Admin','middleware' =>['auth','aut
     Route::any('setting/credits',['as'=>'admin.setting.credits','uses'=>'SettingController@credits']);
     /*SEO设置*/
     Route::any('setting/seo',['as'=>'admin.setting.seo','uses'=>'SettingController@seo']);
+    /*功能定义*/
+    Route::any('setting/custom',['as'=>'admin.setting.custom','uses'=>'SettingController@custom']);
+    /*功能定义*/
+    Route::any('setting/attach',['as'=>'admin.setting.attach','uses'=>'SettingController@attach']);
 
     /*xunsearch整合*/
     Route::any('setting/xunSearch',['as'=>'admin.setting.xunSearch','uses'=>'SettingController@xunSearch']);
+    /*geetest*/
+    Route::any('setting/geetest',['as'=>'admin.setting.geetest','uses'=>'SettingController@geetest']);
     /*oauth2.0*/
     Route::any('setting/oauth',['as'=>'admin.setting.oauth','uses'=>'SettingController@oauth']);
 
@@ -377,6 +385,9 @@ Route::Group(['prefix'=>'admin','namespace'=>'Admin','middleware' =>['auth','aut
 
     /*分类管理*/
     Route::resource('category', 'CategoryController',['except' => ['show']]);
+
+    /*动态管理*/
+    Route::resource('dynamic', 'DynamicController',['except' => ['show']]);
 
 
 

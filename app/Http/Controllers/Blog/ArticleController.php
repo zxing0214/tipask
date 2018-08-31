@@ -7,6 +7,7 @@ use App\Models\Question;
 use App\Models\Tag;
 use App\Models\UserData;
 use App\Models\UserTag;
+use App\Services\CaptchaService;
 use Illuminate\Http\Request;
 
 use App\Http\Requests;
@@ -43,7 +44,7 @@ class ArticleController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(Request $request, CaptchaService $captchaService)
     {
         $loginUser = $request->user();
         if($request->user()->status === 0){
@@ -62,7 +63,7 @@ class ArticleController extends Controller
 
         /*如果开启验证码则需要输入验证码*/
         if( Setting()->get('code_create_article') ){
-            $this->validateRules['captcha'] = 'required|captcha';
+            $captchaService->setValidateRules('code_create_article',$this->validateRules);
         }
 
         $this->validate($request,$this->validateRules);
@@ -78,7 +79,7 @@ class ArticleController extends Controller
 
         if($request->hasFile('logo')){
             $validateRules = [
-                'logo' => 'required|image|max:'.config('tipask.upload.image.max_size'),
+                'logo' => 'required|image|max:'.config('tipask.upload.image_size'),
             ];
             $this->validate($request,$validateRules);
             $file = $request->file('logo');
@@ -99,7 +100,7 @@ class ArticleController extends Controller
             Tag::multiSave($tagString,$article);
 
             //记录动态
-            $this->doing($article->user_id,'create_article',get_class($article),$article->id,$article->title,$article->summery);
+            $this->doing($article->user_id,'create_article',get_class($article),$article->id,$article->title,$article->summary);
 
             /*用户提问数+1*/
             $loginUser->userData()->increment('articles');
@@ -115,7 +116,7 @@ class ArticleController extends Controller
                 $message = '文章发布成功！为了确保文章的质量，我们会对您发布的文章进行审核。请耐心等待......';
             }
 
-            $this->counter( 'article_num_'. $article->user_id , 1 , 3600 );
+            $this->counter( 'article_num_'. $article->user_id , 1 , 60 );
 
 
             return $this->success(route('blog.article.detail',['id'=>$article->id]),$message);
@@ -227,7 +228,7 @@ class ArticleController extends Controller
 
         if($request->hasFile('logo')){
             $validateRules = [
-                'logo' => 'required|image|max:'.config('tipask.upload.image.max_size'),
+                'logo' => 'required|image|max:'.config('tipask.upload.image_size'),
             ];
             $this->validate($request,$validateRules);
             $file = $request->file('logo');

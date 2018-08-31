@@ -8,6 +8,7 @@ use App\Models\Question;
 use App\Models\QuestionInvitation;
 use App\Models\Setting;
 use App\Models\UserTag;
+use App\Services\CaptchaService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Http\Requests;
@@ -29,7 +30,7 @@ class AnswerController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(Request $request, CaptchaService $captchaService)
     {
         $loginUser = $request->user();
         if($loginUser->status === 0){
@@ -54,7 +55,7 @@ class AnswerController extends Controller
         $request->flash();
         /*普通用户修改需要输入验证码*/
         if( Setting()->get('code_create_answer') ){
-            $this->validateRules['captcha'] = 'required|captcha';
+            $captchaService->setValidateRules('code_create_answer', $this->validateRules);
         }
 
         $this->validate($request,$this->validateRules);
@@ -81,8 +82,8 @@ class AnswerController extends Controller
             $this->doing($answer->user_id,'answer',get_class($question),$question->id,$question->title,$answer->content);
 
             /*记录通知*/
-            $this->notify($answer->user_id,$question->user_id,'answer',$question->title,$question->id,$answer->content);
-            
+            $this->notify($answer->user_id, $question->user_id, 'answer', $question->title, $answer->id, $answer->content, 'question', $question->id);
+
             /*回答后通知关注问题*/
             if(intval($request->input('followed'))){
                 $attention = Attention::where("user_id",'=',$request->user()->id)->where('source_type','=',get_class($question))->where('source_id','=',$question->id)->count();
@@ -105,7 +106,7 @@ class AnswerController extends Controller
             /*修改问题邀请表的回答状态*/
             QuestionInvitation::where('question_id','=',$question->id)->where('user_id','=',$request->user()->id)->update(['status'=>1]);
 
-            $this->counter( 'answer_num_'. $answer->user_id , 1 , 3600 );
+            $this->counter( 'answer_num_'. $answer->user_id , 1 , 60 );
 
             /*记录积分*/
             if($answer->status ==1 && $this->credit($request->user()->id,'answer',Setting()->get('coins_answer'),Setting()->get('credits_answer'),$question->id,$question->title)){
